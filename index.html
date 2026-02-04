@@ -2,8 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Fantasy RPG Map</title>
+  <title>Kamae</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:wght@300;400;500;600&display=swap" rel="stylesheet">
 
   <!-- Leaflet CSS -->
   <link
@@ -67,40 +72,99 @@
       background: #1a1a1a !important;
     }
 
-    /* Fantasy / RPG popup styling */
+    /* Fantasy / RPG popup styling - Parşömen teması */
     .leaflet-popup-content-wrapper {
-      background: radial-gradient(circle at top, #3b2f2f 0%, #1f1b1b 55%, #141010 100%);
-      border-radius: 10px;
-      border: 2px solid #d4af37; /* gold */
-      box-shadow: 0 0 25px rgba(0, 0, 0, 0.7);
-      color: #fcefd3;
-      font-family: "Georgia", "Times New Roman", serif;
+      background: #cfab77; /* Koyu bej/altın tonu */
+      border-radius: 8px;
+      border: 2px solid #2F4F4F; /* Koyu Yeşim Yeşili */
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      color: #3d351e;
+      font-family: "Cormorant Garamond", "Georgia", serif;
     }
 
     .leaflet-popup-tip {
-      background: #3b2f2f;
-      border: 2px solid #d4af37;
+      background: #cfab77;
+      border: 2px solid #2F4F4F;
     }
 
     .popup-title {
-      font-family: "Cinzel", "IM Fell English", "Georgia", serif;
+      font-family: "Cinzel", serif;
       font-size: 1.1rem;
-      margin: 0 0 0.25rem;
-      color: #f8e0a0;
+      margin: 0 0 0.5rem;
+      color: #3d351e;
       letter-spacing: 0.05em;
       text-transform: uppercase;
+      font-weight: 700;
     }
 
     .popup-description {
-      font-size: 0.9rem;
-      line-height: 1.4;
+      font-family: "Cormorant Garamond", serif;
+      font-size: 0.95rem;
+      line-height: 1.6;
       margin: 0;
-      color: #fcefd3;
+      color: #3d351e;
+      font-weight: 700;
+    }
+
+    /* Giriş ekranı overlay */
+    #entry-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 10000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: opacity 4.5s ease;
+    }
+
+    #entry-overlay.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #entry-button {
+      font-family: "Cinzel", serif;
+      font-size: 1.5rem;
+      font-weight: 600;
+      padding: 18px 40px;
+      background: transparent;
+      color: #d4af37;
+      border: 3px solid #d4af37;
+      border-radius: 8px;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+    }
+
+    #entry-button:hover {
+      background: rgba(212, 175, 55, 0.1);
+      box-shadow: 0 0 30px rgba(212, 175, 55, 0.5);
+      transform: scale(1.05);
+    }
+
+    #entry-button:active {
+      transform: scale(0.98);
     }
   </style>
 </head>
 <body>
+  <!-- Giriş ekranı overlay -->
+  <div id="entry-overlay">
+    <button id="entry-button">Kamae'ye Gir</button>
+  </div>
+
   <div id="map"></div>
+
+  <!-- Arka plan sesi -->
+  <audio id="ambience-audio" loop>
+    <source src="assets/audio/ambience.mp3" type="audio/mpeg">
+  </audio>
 
   <!-- Leaflet JS -->
   <script
@@ -181,7 +245,7 @@
     // === Cities (using [y, x] pixel coordinates) ===
     addCity(
       "Tenkyou",
-      "Shogun’un altın surları ve hiç sönmeyen fenerleriyle geceye meydan okuyan, kıtanın atan kalbi. Halk, İmparatorluk Sarayı’nın gölgesinde, kılıçla çizilmiş kusursuz bir sessizlik ve düzen içinde yaşar.",
+      "Shogun'un altın surları ve hiç sönmeyen fenerleriyle geceye meydan okuyan, kıtanın atan kalbi. Halk, İmparatorluk Sarayı'nın gölgesinde, kılıçla çizilmiş kusursuz bir sessizlik ve düzen içinde yaşar.",
       2250,
       1770
     );
@@ -208,6 +272,30 @@
       const y = Math.round(e.latlng.lat);
       const x = Math.round(e.latlng.lng);
       console.log('[y, x] =', [y, x]);
+    });
+
+    // === Giriş ekranı ve ses yönetimi ===
+    const entryOverlay = document.getElementById('entry-overlay');
+    const entryButton = document.getElementById('entry-button');
+    const ambienceAudio = document.getElementById('ambience-audio');
+
+    // Ses seviyesini ayarla
+    ambienceAudio.volume = 0.4;
+
+    // Butona tıklandığında overlay'i kaldır ve sesi başlat
+    entryButton.addEventListener('click', function() {
+      // Overlay'i fade out yap
+      entryOverlay.classList.add('hidden');
+      
+      // Ses çalmayı dene (kullanıcı etkileşimi gerektiği için)
+      ambienceAudio.play().catch(function(error) {
+        console.log('Ses çalınamadı (kullanıcı etkileşimi gerekebilir):', error);
+      });
+
+      // Overlay'i DOM'dan kaldır (transition tamamlandıktan sonra)
+      setTimeout(function() {
+        entryOverlay.remove();
+      }, 4500); // CSS transition süresi ile eşleşmeli (4.5s)
     });
   </script>
 </body>
