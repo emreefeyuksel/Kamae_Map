@@ -72,6 +72,11 @@
       background: #1a1a1a !important;
     }
 
+    /* Harita görselini karart ve arka planla uyumlu hale getir */
+    img.leaflet-image-layer {
+      filter: brightness(0.7) contrast(1.1);
+    }
+
     /* Fantasy / RPG popup styling - Parşömen teması */
     .leaflet-popup-content-wrapper {
       background: #cfab77; /* Koyu bej/altın tonu */
@@ -151,6 +156,69 @@
     #entry-button:active {
       transform: scale(0.98);
     }
+
+    /* Vignette efekti - Kenar karartması */
+    #vignette {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, transparent 0%, rgba(0, 0, 0, 0.6) 100%);
+      pointer-events: none;
+      z-index: 500;
+    }
+
+    /* Kül yağmuru efekti */
+    .ash-particle {
+      position: fixed;
+      top: -10px;
+      background: rgba(80, 75, 70, 0.7);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 400;
+      box-shadow: 0 0 2px rgba(60, 55, 50, 0.5);
+    }
+
+    /* Kül yağmuru animasyonu - Gerçekçi süzülme ve yalpalama */
+    @keyframes ash-fall {
+      0% {
+        transform: translateY(-10vh) translateX(0px) rotate(0deg);
+        opacity: 0.8;
+      }
+      12.5% {
+        transform: translateY(12.5vh) translateX(15px) rotate(22deg);
+        opacity: 0.75;
+      }
+      25% {
+        transform: translateY(25vh) translateX(-10px) rotate(45deg);
+        opacity: 0.7;
+      }
+      37.5% {
+        transform: translateY(37.5vh) translateX(25px) rotate(67deg);
+        opacity: 0.65;
+      }
+      50% {
+        transform: translateY(50vh) translateX(-20px) rotate(90deg);
+        opacity: 0.6;
+      }
+      62.5% {
+        transform: translateY(62.5vh) translateX(10px) rotate(112deg);
+        opacity: 0.55;
+      }
+      75% {
+        transform: translateY(75vh) translateX(-15px) rotate(135deg);
+        opacity: 0.5;
+      }
+      87.5% {
+        transform: translateY(87.5vh) translateX(5px) rotate(157deg);
+        opacity: 0.3;
+      }
+      100% {
+        transform: translateY(110vh) translateX(-10px) rotate(180deg);
+        opacity: 0;
+      }
+    }
   </style>
 </head>
 <body>
@@ -158,6 +226,12 @@
   <div id="entry-overlay">
     <button id="entry-button">Kamae'ye Gir</button>
   </div>
+
+  <!-- Vignette efekti -->
+  <div id="vignette"></div>
+
+  <!-- Kül yağmuru container -->
+  <div id="ash-container"></div>
 
   <div id="map"></div>
 
@@ -273,6 +347,35 @@
       const x = Math.round(e.latlng.lng);
       console.log('[y, x] =', [y, x]);
     });
+
+    // === Kül yağmuru efekti ===
+    function createAshFall() {
+      const ashContainer = document.getElementById('ash-container');
+      const particleCount = Math.floor(Math.random() * 11) + 60; // 60-70 arası rastgele
+
+      for (let i = 0; i < particleCount; i++) {
+        const ash = document.createElement('div');
+        ash.className = 'ash-particle';
+
+        // Rastgele özellikler
+        const size = Math.random() * 3 + 2; // 2px - 5px
+        const left = Math.random() * 100; // 0% - 100%
+        const opacity = Math.random() * 0.4 + 0.4; // 0.4 - 0.8
+        const duration = Math.random() * 7 + 8; // 8s - 15s
+        const delay = Math.random() * 5; // 0s - 5s gecikme
+
+        ash.style.width = size + 'px';
+        ash.style.height = size + 'px';
+        ash.style.left = left + '%';
+        ash.style.opacity = opacity;
+        ash.style.animation = `ash-fall ${duration}s linear ${delay}s infinite`;
+
+        ashContainer.appendChild(ash);
+      }
+    }
+
+    // Sayfa yüklendiğinde kül yağmurunu başlat
+    createAshFall();
 
     // === Giriş ekranı ve ses yönetimi ===
     const entryOverlay = document.getElementById('entry-overlay');
