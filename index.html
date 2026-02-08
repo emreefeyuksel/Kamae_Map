@@ -32,7 +32,10 @@
     #map {
       height: 100vh;
       width: 100vw;
-      background: #1a1a1a; /* koyu arka plan - harita alanı için */
+      /*background: #1a1a1a; /* koyu arka plan - harita alanı için */
+      background: transparent;
+      position: relative;
+      z-index: 10; /* Slideshow'un üstünde olmalı */
     }
 
     /* Koyu tema - Zoom butonları ve kontroller */
@@ -69,7 +72,8 @@
 
     /* Harita dışındaki boş alanlar için */
     .leaflet-container {
-      background: #1a1a1a !important;
+      /*background: #1a1a1a !important;*/
+      background: transparent !important;
     }
 
     /* Harita görselini karart ve arka planla uyumlu hale getir */
@@ -118,12 +122,12 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0, 0, 0, 0.85);
       z-index: 10000;
       display: flex;
       justify-content: center;
       align-items: center;
       transition: opacity 4.5s ease;
+      overflow: hidden;
     }
 
     #entry-overlay.hidden {
@@ -131,7 +135,57 @@
       pointer-events: none;
     }
 
+    /* Background slideshow container - Harita arka planında */
+    .background-slideshow {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    /* Overlay içindeyken slideshow'un z-index'i (overlay darken'ın altında) */
+    #entry-overlay .background-slideshow {
+      z-index: 10001;
+    }
+
+    /* Her bir background slide */
+    .background-slide {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      opacity: 0;
+      transition: opacity 1.5s ease;
+    }
+
+    .background-slide.active {
+      opacity: 1;
+    }
+
+    .background-slide.fade-out {
+      opacity: 0;
+    }
+
+    /* Siyah transparan katman (mevcut rgba(0,0,0,0.85) efekti) */
+    .overlay-darken {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      z-index: 10002;
+      pointer-events: none;
+    }
+
     #entry-button {
+      position: relative;
       font-family: "Cinzel", serif;
       font-size: 1.5rem;
       font-weight: 600;
@@ -145,6 +199,7 @@
       letter-spacing: 0.1em;
       transition: all 0.3s ease;
       box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+      z-index: 10003;
     }
 
     #entry-button:hover {
@@ -224,6 +279,11 @@
 <body>
   <!-- Giriş ekranı overlay -->
   <div id="entry-overlay">
+    <!-- Background slideshow - Overlay içinde başlar, overlay kapandığında body'ye taşınır -->
+    <div class="background-slideshow" id="background-slideshow">
+      <!-- Görseller JavaScript ile dinamik eklenecek -->
+    </div>
+    <div class="overlay-darken"></div>
     <button id="entry-button">Kamae'ye Gir</button>
   </div>
 
@@ -377,6 +437,87 @@
     // Sayfa yüklendiğinde kül yağmurunu başlat
     createAshFall();
 
+    // === Background Slideshow ===
+    const backgroundImages = [
+      'assets/Background/fernando-silva-03.jpg',
+      'assets/Background/jason-scheier-10a.jpg',
+      'assets/Background/jason-scheier-15.jpg',
+      'assets/Background/jason-scheier-cave-painting2-web.jpg',
+      'assets/Background/jason-scheier-jason-scheier-sword-of-doom.jpg',
+      'assets/Background/jason-scheier-plein-air12-web.jpg',
+      'assets/Background/jason-scheier-shrine-snow-js-web.jpg',
+      'assets/Background/jason-scheier-warmup-js1-web.jpg',
+      'assets/Background/loline-bongiraud-e107-0820-colo-1920x1080-v004.jpg',
+      'assets/Background/nakshatra-soni-alone-in-the-forest.jpg',
+      'assets/Background/nicolas-chacin-samurai3.jpg'
+    ];
+
+    let currentSlideIndex = 0;
+    let slideshowInterval = null;
+
+    // Tüm görselleri yükle ve container'a ekle
+    function initBackgroundSlideshow() {
+      const slideshowContainer = document.querySelector('.background-slideshow');
+      
+      if (!slideshowContainer) {
+        console.error('Slideshow container bulunamadı!');
+        return;
+      }
+      
+      backgroundImages.forEach((imagePath, index) => {
+        const slide = document.createElement('div');
+        slide.className = 'background-slide';
+        slide.style.backgroundImage = `url('${imagePath}')`;
+        
+        // İlk görseli aktif yap
+        if (index === 0) {
+          slide.classList.add('active');
+        }
+        
+        slideshowContainer.appendChild(slide);
+      });
+      
+      console.log('Slideshow başlatıldı,', backgroundImages.length, 'görsel yüklendi');
+    }
+
+    // Aktif görseli değiştir
+    function changeSlide() {
+      const slides = document.querySelectorAll('.background-slide');
+      
+      if (slides.length === 0) return;
+      
+      // Mevcut görseli fade out yap
+      slides[currentSlideIndex].classList.remove('active');
+      slides[currentSlideIndex].classList.add('fade-out');
+      
+      // Sonraki görsele geç (döngü)
+      currentSlideIndex = (currentSlideIndex + 1) % slides.length;
+      
+      // Yeni görseli fade in yap
+      setTimeout(() => {
+        slides[currentSlideIndex].classList.remove('fade-out');
+        slides[currentSlideIndex].classList.add('active');
+      }, 50);
+    }
+
+    // Otomatik geçişi başlat
+    function startSlideshow() {
+      // İlk geçiş 4 saniye sonra
+      slideshowInterval = setInterval(changeSlide, 4000);
+    }
+
+    // Slideshow'u durdur
+    function stopSlideshow() {
+      if (slideshowInterval) {
+        clearInterval(slideshowInterval);
+        slideshowInterval = null;
+      }
+    }
+
+    // Sayfa yüklendiğinde slideshow'u başlat
+    initBackgroundSlideshow();
+    startSlideshow();
+
     // === Giriş ekranı ve ses yönetimi ===
     const entryOverlay = document.getElementById('entry-overlay');
     const entryButton = document.getElementById('entry-button');
@@ -387,6 +528,25 @@
 
     // Butona tıklandığında overlay'i kaldır ve sesi başlat
     entryButton.addEventListener('click', function() {
+      // Slideshow'u overlay'den body'ye taşı (harita arka planında devam etmesi için)
+      const slideshow = document.getElementById('background-slideshow');
+      // Mevcut karartma katmanını da seçelim
+      const darkOverlay = document.querySelector('.overlay-darken');
+      if (slideshow && slideshow.parentElement === entryOverlay) {
+        document.body.appendChild(slideshow);
+        // Z-index'i harita arka planı için ayarla
+        slideshow.style.zIndex = '1';
+
+        if (darkOverlay) {
+            document.body.appendChild(darkOverlay);
+            // Slideshow (1) < DarkOverlay (2) < Map (10)
+            darkOverlay.style.zIndex = '2'; 
+        }
+
+        // Harita arka planını şeffaf yap
+        document.getElementById('map').style.background = 'transparent';
+      }
+      
       // Overlay'i fade out yap
       entryOverlay.classList.add('hidden');
       
